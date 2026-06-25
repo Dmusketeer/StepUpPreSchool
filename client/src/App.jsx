@@ -1,0 +1,25 @@
+import AdminPanel from "./AdminPanel.jsx";
+import ErpReady from "./ErpReady.jsx";
+import PublicSite from "./PublicSite.jsx";
+import RolePortal from "./RolePortal.jsx";
+import { getAppRoute } from "./config/routes.js";
+
+function App() {
+  const route = getAppRoute();
+
+  if (route === "admin") {
+    return <AdminPanel />;
+  }
+
+  if (route === "portal") {
+    return <RolePortal />;
+  }
+
+  if (route === "erp") {
+    return <ErpReady />;
+  }
+
+  return <PublicSite />;
+}
+
+export default App;

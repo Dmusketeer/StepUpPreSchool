@@ -1,0 +1,23 @@
+{
+  "name": "stepup-pre-school",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Full-stack dynamic website for StepUp Pre School.",
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev --workspace server\" \"npm run dev --workspace client\"",
+    "dev:client": "npm run dev --workspace client",
+    "dev:server": "npm run dev --workspace server",
+    "build": "npm run build --workspace client",
+    "start": "npm run start --workspace server"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "engines": {
+    "node": ">=26.3.1"
+  }
+}
