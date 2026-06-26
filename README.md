@@ -57,6 +57,98 @@ npm start
 
 After building, Express serves the production frontend from `http://localhost:5000`.
 
+## Deploy to Azure with GitHub Actions
+
+This repository includes:
+
+- CI workflow: `.github/workflows/ci.yml` (runs tests on push/PR)
+- Deployment workflow: `.github/workflows/deploy-azure.yml` (deploys on push to `main`)
+
+### 1. Create Azure App Service
+
+Use a Linux Node.js App Service and set runtime to Node 22 LTS.
+
+### 2. Configure GitHub repository secrets
+
+In GitHub repository settings, add these secrets:
+
+- `AZURE_WEBAPP_NAME`: your Azure Web App name
+- `AZURE_WEBAPP_PUBLISH_PROFILE`: publish profile XML downloaded from Azure portal
+
+### 3. Configure Azure App Service application settings
+
+Set these in **App Service > Settings > Environment variables**:
+
+- `NODE_ENV=production`
+- `CLIENT_ORIGIN=https://stepuppreschool.in`
+- `MONGODB_URI=<your mongodb uri>` (optional but recommended for production)
+- `MONGODB_DB_NAME=stepup_pre_school`
+- `MONGODB_SERVER_SELECTION_TIMEOUT_MS=2500`
+- `ADMIN_USERNAME=admin`
+- `ADMIN_PASSWORD=<strong-password>`
+- `WHATSAPP_TO_NUMBER=<optional>`
+- `WHATSAPP_PHONE_NUMBER_ID=<optional>`
+- `WHATSAPP_ACCESS_TOKEN=<optional>`
+- `WHATSAPP_GRAPH_VERSION=v20.0`
+
+Do not commit production secrets into source control.
+
+### 4. Configure custom domain `stepuppreschool.in`
+
+In Azure portal:
+
+1. Open your App Service.
+2. Go to **Custom domains**.
+3. Add `stepuppreschool.in` and `www.stepuppreschool.in`.
+4. Add DNS records at your domain provider as prompted by Azure:
+	- typically an `A` record for apex (`@`) to App Service IP
+	- typically a `CNAME` for `www` to `<app-name>.azurewebsites.net`
+	- TXT validation records as required by Azure
+5. Enable HTTPS by binding a managed certificate for both hostnames.
+
+After DNS and SSL are active, your GitHub deployment workflow will publish updates to Azure and your custom domain will serve the latest version.
+
+## Deploy to Render (Free Tier)
+
+This repository now includes a Render Blueprint file:
+
+- `render.yaml`
+
+### 1. One-time setup (one-click create)
+
+1. Push this repository to GitHub.
+2. Open Render and click **New +** > **Blueprint**.
+3. Select this repository.
+4. Render reads `render.yaml` and pre-fills service configuration.
+5. Click **Apply** to create the service.
+
+### 2. Required environment values to replace
+
+Update these placeholder values in Render dashboard after the first Blueprint apply:
+
+- `MONGODB_URI`
+- `ADMIN_PASSWORD`
+- WhatsApp settings (`WHATSAPP_TO_NUMBER`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_ACCESS_TOKEN`) if you want WhatsApp notifications.
+
+Use MongoDB Atlas for persistence. Free hosting instances can restart, so local files are not durable for production data.
+
+### 3. Configure custom domain `stepuppreschool.in`
+
+1. In Render service settings, open **Custom Domains**.
+2. Add `stepuppreschool.in` and `www.stepuppreschool.in`.
+3. Add DNS records in your domain provider exactly as Render shows.
+4. Wait for DNS verification and SSL provisioning.
+
+`CLIENT_ORIGIN` is already set in `render.yaml` for both domain variants:
+
+- `https://stepuppreschool.in`
+- `https://www.stepuppreschool.in`
+
+### 4. Redeploy in one click every time
+
+- With `autoDeploy: true`, every push to `main` triggers a deployment automatically.
+- For manual one-click redeploy in Render: **Manual Deploy** > **Deploy latest commit**.
+
 ## API Endpoints
 
 - `GET /api/health`
