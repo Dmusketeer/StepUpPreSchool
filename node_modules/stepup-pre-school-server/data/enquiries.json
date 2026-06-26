@@ -1,0 +1,26 @@
+[
+  {
+    "id": "204b1257-a10a-45a6-acec-11eef7e4cb85",
+    "guardianName": "saumya",
+    "phone": "1234",
+    "email": "test@email.com",
+    "childName": "Aarohi",
+    "childAge": "2",
+    "interest": "Nursery",
+    "message": "jfdiadsklfnd",
+    "createdAt": "2026-06-23T17:36:46.784Z",
+    "status": "closed",
+    "updatedAt": "2026-06-25T18:33:36.793Z"
+  },
+  {
+    "id": "7d99ab2e-518f-46c2-ad26-1b62d150094f",
+    "guardianName": "Dheeraj",
+    "phone": "8887867016",
+    "email": "abc@email.com",
+    "childName": "Aarohi",
+    "childAge": "3",
+    "interest": "Playgroup",
+    "message": "want to take admission",
+    "createdAt": "2026-06-23T17:18:01.973Z"
+  }
+]

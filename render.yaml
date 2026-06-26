@@ -1,0 +1,37 @@
+services:
+  - type: web
+    name: stepup-preschool-free
+    runtime: node
+    plan: free
+    region: singapore
+    branch: main
+    rootDir: .
+    autoDeploy: true
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: NODE_ENV
+        value: production
+      - key: CLIENT_ORIGIN
+        value: https://stepuppreschool.in,https://www.stepuppreschool.in
+      - key: MONGODB_URI
+        value: REPLACE_WITH_YOUR_MONGODB_URI
+      - key: MONGODB_DB_NAME
+        value: stepup_pre_school
+      - key: MONGODB_SERVER_SELECTION_TIMEOUT_MS
+        value: "2500"
+      - key: ADMIN_USERNAME
+        value: admin
+      - key: ADMIN_PASSWORD
+        value: REPLACE_WITH_STRONG_PASSWORD
+      - key: WHATSAPP_TO_NUMBER
+        value: OPTIONAL_WHATSAPP_NUMBER
+      - key: WHATSAPP_PHONE_NUMBER_ID
+        value: OPTIONAL_WHATSAPP_PHONE_NUMBER_ID
+      - key: WHATSAPP_ACCESS_TOKEN
+        value: OPTIONAL_WHATSAPP_ACCESS_TOKEN
+      - key: WHATSAPP_GRAPH_VERSION
+        value: v20.0
