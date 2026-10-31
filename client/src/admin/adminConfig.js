@@ -7,6 +7,7 @@ export const emptyLogin = {
 
 export const emptyPasswordForm = {
   currentPassword: "",
+  newUsername: "",
   newPassword: "",
   confirmPassword: ""
 };

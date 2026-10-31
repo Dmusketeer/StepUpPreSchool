@@ -233,7 +233,7 @@ function RoleAccessSection() {
     },
     {
       title: "Admin Login",
-      text: "Website content, enquiries, media uploads, social links, and password reset.",
+      text: "Website content, enquiries, media uploads, social links, and admin ID & password reset.",
       href: "/admin",
       Icon: ShieldCheck
     }

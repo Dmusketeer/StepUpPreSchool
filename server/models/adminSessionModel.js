@@ -15,6 +15,14 @@ export function deleteAdminSession(token) {
   adminSessions.delete(token);
 }
 
+export function deleteAllAdminSessions(exceptToken = "") {
+  for (const token of adminSessions.keys()) {
+    if (token !== exceptToken) {
+      adminSessions.delete(token);
+    }
+  }
+}
+
 export function validateAdminSession(token) {
   const expiresAt = adminSessions.get(token);
 

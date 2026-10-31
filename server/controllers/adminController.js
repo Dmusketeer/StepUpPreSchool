@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
-import { changeAdminPassword, validateAdminCredential } from "../models/adminCredentialModel.js";
-import { createAdminSession, deleteAdminSession } from "../models/adminSessionModel.js";
+import { changeAdminCredentials, getAdminUsername, validateAdminCredential } from "../models/adminCredentialModel.js";
+import { createAdminSession, deleteAdminSession, deleteAllAdminSessions } from "../models/adminSessionModel.js";
 import { listEnquiries, updateEnquiryStatus } from "../models/enquiryModel.js";
 import { addMediaItems, deleteMedia, listMedia } from "../models/mediaModel.js";
 import { ensureSiteShape, readSiteData, writeSiteData } from "../models/siteModel.js";
@@ -27,6 +27,14 @@ export async function login(request, response, next) {
 export function logout(request, response) {
   deleteAdminSession(request.adminToken);
   response.json({ message: "Logged out." });
+}
+
+export async function getAdminAccount(_request, response, next) {
+  try {
+    response.json({ username: await getAdminUsername() });
+  } catch (error) {
+    next(error);
+  }
 }
 
 export async function getAdminSite(_request, response, next) {
@@ -166,29 +174,47 @@ export async function importAdminGoogleMedia(request, response, next) {
   }
 }
 
-export async function updateAdminPassword(request, response, next) {
+export async function updateAdminCredentials(request, response, next) {
   try {
     const currentPassword = clean(request.body.currentPassword);
+    const newUsername = clean(request.body.newUsername);
     const newPassword = clean(request.body.newPassword);
 
-    if (!currentPassword || !newPassword) {
-      response.status(400).json({ error: "Current password and new password are required." });
+    if (!currentPassword) {
+      response.status(400).json({ error: "Current password is required." });
       return;
     }
 
-    const result = await changeAdminPassword(currentPassword, newPassword);
+    if (!newUsername && !newPassword) {
+      response.status(400).json({ error: "Provide a new admin ID, a new password, or both." });
+      return;
+    }
+
+    const result = await changeAdminCredentials(currentPassword, { newUsername, newPassword });
 
     if (!result.ok) {
       response.status(result.status).json({ error: result.error });
       return;
     }
 
+    deleteAllAdminSessions(request.adminToken);
+
     response.json({
-      message: "Admin password updated.",
+      message: buildCredentialUpdateMessage(result),
       username: result.username,
+      usernameChanged: result.usernameChanged,
+      passwordChanged: result.passwordChanged,
       updatedAt: result.updatedAt
     });
   } catch (error) {
     next(error);
   }
+}
+
+function buildCredentialUpdateMessage({ usernameChanged, passwordChanged }) {
+  if (usernameChanged && passwordChanged) {
+    return "Admin ID and password updated.";
+  }
+
+  return usernameChanged ? "Admin ID updated." : "Admin password updated.";
 }

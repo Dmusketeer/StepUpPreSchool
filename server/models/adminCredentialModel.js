@@ -7,6 +7,10 @@ import { getAdminCredentialModel } from "./mongooseModels.js";
 
 const keyLength = 64;
 const adminCredentialsDocumentId = "main";
+const minUsernameLength = 3;
+const maxUsernameLength = 32;
+const minPasswordLength = 8;
+const usernamePattern = /^[A-Za-z0-9._-]+$/;
 
 export async function validateAdminCredential(username, password) {
   const credentials = await readAdminCredentials();
@@ -18,20 +22,38 @@ export async function validateAdminCredential(username, password) {
   return verifyPassword(password, credentials.password);
 }
 
-export async function changeAdminPassword(currentPassword, newPassword) {
+export async function getAdminUsername() {
+  const credentials = await readAdminCredentials();
+  return credentials.username;
+}
+
+export async function changeAdminCredentials(currentPassword, { newUsername = "", newPassword = "" } = {}) {
+  if (!newUsername && !newPassword) {
+    return { ok: false, status: 400, error: "Provide a new admin ID, a new password, or both." };
+  }
+
   const credentials = await readAdminCredentials();
 
   if (!verifyPassword(currentPassword, credentials.password)) {
     return { ok: false, status: 401, error: "Current password is incorrect." };
   }
 
-  if (newPassword.length < 8) {
-    return { ok: false, status: 400, error: "New password must be at least 8 characters." };
+  if (newUsername) {
+    const usernameError = validateUsername(newUsername);
+
+    if (usernameError) {
+      return { ok: false, status: 400, error: usernameError };
+    }
+  }
+
+  if (newPassword && newPassword.length < minPasswordLength) {
+    return { ok: false, status: 400, error: `New password must be at least ${minPasswordLength} characters.` };
   }
 
   const updatedCredentials = {
     ...credentials,
-    password: createPasswordRecord(newPassword),
+    username: newUsername || credentials.username,
+    password: newPassword ? createPasswordRecord(newPassword) : credentials.password,
     updatedAt: new Date().toISOString()
   };
 
@@ -40,8 +62,22 @@ export async function changeAdminPassword(currentPassword, newPassword) {
   return {
     ok: true,
     username: updatedCredentials.username,
+    usernameChanged: updatedCredentials.username !== credentials.username,
+    passwordChanged: Boolean(newPassword),
     updatedAt: updatedCredentials.updatedAt
   };
+}
+
+function validateUsername(username) {
+  if (username.length < minUsernameLength || username.length > maxUsernameLength) {
+    return `Admin ID must be between ${minUsernameLength} and ${maxUsernameLength} characters.`;
+  }
+
+  if (!usernamePattern.test(username)) {
+    return "Admin ID can only contain letters, numbers, dots, underscores, and hyphens.";
+  }
+
+  return "";
 }
 
 async function readAdminCredentials() {
