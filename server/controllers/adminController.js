@@ -1,10 +1,18 @@
 import crypto from "node:crypto";
-import { changeAdminCredentials, getAdminUsername, validateAdminCredential } from "../models/adminCredentialModel.js";
+import {
+  changeAdminCredentials,
+  checkAdminUsernameFormat,
+  getAdminUsername,
+  resetAdminCredentials,
+  validateAdminCredential
+} from "../models/adminCredentialModel.js";
+import { clearPasswordResetCode, consumePasswordResetCode, createPasswordResetCode } from "../models/adminPasswordResetModel.js";
 import { createAdminSession, deleteAdminSession, deleteAllAdminSessions } from "../models/adminSessionModel.js";
 import { listEnquiries, updateEnquiryStatus } from "../models/enquiryModel.js";
 import { addMediaItems, deleteMedia, listMedia } from "../models/mediaModel.js";
 import { ensureSiteShape, readSiteData, writeSiteData } from "../models/siteModel.js";
 import { importGooglePlacePhotos } from "../services/placesService.js";
+import { sendWhatsAppMessage } from "../services/whatsappService.js";
 import { clean, isPlainObject, parseLimit } from "../utils/textUtils.js";
 import { createMediaItem, getUploadedFiles } from "../utils/uploadUtils.js";
 
@@ -217,4 +225,89 @@ function buildCredentialUpdateMessage({ usernameChanged, passwordChanged }) {
   }
 
   return usernameChanged ? "Admin ID updated." : "Admin password updated.";
+}
+
+export async function requestAdminPasswordReset(_request, response, next) {
+  try {
+    const code = createPasswordResetCode();
+    const whatsappResult = await sendWhatsAppMessage(buildPasswordResetMessage(code));
+
+    if (!whatsappResult.sent) {
+      clearPasswordResetCode();
+      response.status(503).json({ error: `Could not send the reset code. ${whatsappResult.reason}` });
+      return;
+    }
+
+    response.json({ message: "A one-time reset code was sent via WhatsApp to the registered admin number." });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function confirmAdminPasswordReset(request, response, next) {
+  try {
+    const code = clean(request.body.code);
+    const newUsername = clean(request.body.newUsername);
+    const newPassword = clean(request.body.newPassword);
+
+    if (!code) {
+      response.status(400).json({ error: "Enter the reset code sent via WhatsApp." });
+      return;
+    }
+
+    if (!newPassword) {
+      response.status(400).json({ error: "Enter a new password." });
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      response.status(400).json({ error: "New password must be at least 8 characters." });
+      return;
+    }
+
+    if (newUsername) {
+      const usernameError = checkAdminUsernameFormat(newUsername);
+
+      if (usernameError) {
+        response.status(400).json({ error: usernameError });
+        return;
+      }
+    }
+
+    const codeResult = consumePasswordResetCode(code);
+
+    if (!codeResult.ok) {
+      response.status(400).json({ error: codeResult.error });
+      return;
+    }
+
+    const result = await resetAdminCredentials({ newUsername, newPassword });
+
+    if (!result.ok) {
+      response.status(result.status).json({ error: result.error });
+      return;
+    }
+
+    deleteAllAdminSessions();
+
+    response.json({
+      message: `${buildCredentialUpdateMessage(result)} Login with your new details.`,
+      username: result.username,
+      usernameChanged: result.usernameChanged,
+      passwordChanged: result.passwordChanged,
+      updatedAt: result.updatedAt
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+function buildPasswordResetMessage(code) {
+  return [
+    "StepUp Admin password reset",
+    "",
+    `Your one-time reset code is: ${code}`,
+    "This code expires in 10 minutes and can be used once.",
+    "If you did not request this, you can ignore this message."
+  ].join("\n");
 }

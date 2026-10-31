@@ -1,6 +1,6 @@
 import { env } from "../config/env.js";
 
-export async function sendWhatsAppNotification(enquiry) {
+export async function sendWhatsAppMessage(message) {
   const recipientNumber = normalizeWhatsAppNumber(env.whatsappToNumber);
 
   if (!env.whatsappAccessToken || !env.whatsappPhoneNumberId || !recipientNumber) {
@@ -24,7 +24,7 @@ export async function sendWhatsAppNotification(enquiry) {
         type: "text",
         text: {
           preview_url: false,
-          body: buildWhatsAppMessage(enquiry)
+          body: message
         }
       })
     });
@@ -32,10 +32,10 @@ export async function sendWhatsAppNotification(enquiry) {
     const result = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      console.error("WhatsApp notification failed", result);
+      console.error("WhatsApp message failed", result);
       return {
         sent: false,
-        reason: result.error?.message || "WhatsApp notification failed."
+        reason: result.error?.message || "WhatsApp message failed."
       };
     }
 
@@ -44,12 +44,16 @@ export async function sendWhatsAppNotification(enquiry) {
       messageId: result.messages?.[0]?.id || null
     };
   } catch (error) {
-    console.error("WhatsApp notification failed", error);
+    console.error("WhatsApp message failed", error);
     return {
       sent: false,
-      reason: "WhatsApp notification failed. Check network and API credentials."
+      reason: "WhatsApp message failed. Check network and API credentials."
     };
   }
+}
+
+export async function sendWhatsAppNotification(enquiry) {
+  return sendWhatsAppMessage(buildWhatsAppMessage(enquiry));
 }
 
 function buildWhatsAppMessage(enquiry) {

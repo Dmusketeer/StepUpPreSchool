@@ -23,3 +23,19 @@ export const writeLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: "Too many submissions. Please try again shortly." }
 });
+
+export const passwordResetRequestLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 3,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many reset code requests. Please try again later." }
+});
+
+export const passwordResetConfirmLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many attempts. Please try again shortly." }
+});

@@ -26,6 +26,7 @@ import {
   emptyLogin,
   emptyNoticeForm,
   emptyPasswordForm,
+  emptyResetForm,
   emptyTeacher,
   emptyTestimonial,
   emptyUploadForm,
@@ -53,6 +54,9 @@ function AdminPanel() {
   const [eventForm, setEventForm] = useState(emptyEventForm);
   const [noticeForm, setNoticeForm] = useState(emptyNoticeForm);
   const [passwordForm, setPasswordForm] = useState(emptyPasswordForm);
+  const [resetMode, setResetMode] = useState(false);
+  const [resetForm, setResetForm] = useState(emptyResetForm);
+  const [resetCodeSent, setResetCodeSent] = useState(false);
   const [mediaSearch, setMediaSearch] = useState("");
   const [mediaTypeFilter, setMediaTypeFilter] = useState("all");
   const [mediaCategoryFilter, setMediaCategoryFilter] = useState("all");
@@ -180,6 +184,67 @@ function AdminPanel() {
       rememberAdminUsername(data.username || login.username);
       setLogin((current) => ({ ...current, password: "" }));
       setStatus({ type: "success", message: "Logged in." });
+    } catch (error) {
+      setStatus({ type: "error", message: error.message });
+    }
+  }
+
+  function openPasswordReset() {
+    setResetMode(true);
+    setResetCodeSent(false);
+    setResetForm(emptyResetForm);
+    setStatus({ type: "idle", message: "" });
+  }
+
+  function closePasswordReset() {
+    setResetMode(false);
+    setResetCodeSent(false);
+    setResetForm(emptyResetForm);
+    setStatus({ type: "idle", message: "" });
+  }
+
+  async function requestPasswordResetCode() {
+    setStatus({ type: "loading", message: "Sending reset code via WhatsApp..." });
+
+    try {
+      const response = await requestJson("/api/admin/password-reset/request", { method: "POST" });
+      setResetCodeSent(true);
+      setStatus({ type: "success", message: response.message });
+    } catch (error) {
+      setStatus({ type: "error", message: error.message });
+    }
+  }
+
+  async function confirmPasswordReset(event) {
+    event.preventDefault();
+
+    if (resetForm.newPassword.length < 8) {
+      setStatus({ type: "error", message: "New password must be at least 8 characters." });
+      return;
+    }
+
+    if (resetForm.newPassword !== resetForm.confirmPassword) {
+      setStatus({ type: "error", message: "New password and confirmation do not match." });
+      return;
+    }
+
+    setStatus({ type: "loading", message: "Resetting admin credentials..." });
+
+    try {
+      const response = await requestJson("/api/admin/password-reset/confirm", {
+        method: "POST",
+        body: JSON.stringify({
+          code: resetForm.code,
+          newUsername: resetForm.newUsername,
+          newPassword: resetForm.newPassword
+        })
+      });
+
+      rememberAdminUsername(response.username);
+      setResetMode(false);
+      setResetCodeSent(false);
+      setResetForm(emptyResetForm);
+      setStatus({ type: "success", message: response.message });
     } catch (error) {
       setStatus({ type: "error", message: error.message });
     }
@@ -546,7 +611,22 @@ function AdminPanel() {
   }
 
   if (!isLoggedIn) {
-    return <AdminLogin login={login} setLogin={setLogin} status={status} onSubmit={handleLogin} />;
+    return (
+      <AdminLogin
+        login={login}
+        setLogin={setLogin}
+        status={status}
+        onSubmit={handleLogin}
+        resetMode={resetMode}
+        resetForm={resetForm}
+        setResetForm={setResetForm}
+        resetCodeSent={resetCodeSent}
+        onOpenReset={openPasswordReset}
+        onCloseReset={closePasswordReset}
+        onRequestResetCode={requestPasswordResetCode}
+        onConfirmReset={confirmPasswordReset}
+      />
+    );
   }
 
   return (

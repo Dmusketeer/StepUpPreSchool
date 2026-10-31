@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  confirmAdminPasswordReset,
   deleteAdminMedia,
   getAdminAccount,
   getAdminEnquiries,
@@ -8,6 +9,7 @@ import {
   importAdminGoogleMedia,
   login,
   logout,
+  requestAdminPasswordReset,
   updateAdminCredentials,
   updateAdminEnquiryStatus,
   updateAdminSite,
@@ -15,12 +17,19 @@ import {
 } from "../controllers/adminController.js";
 import { upload } from "../config/upload.js";
 import { requireAdmin } from "../middleware/authMiddleware.js";
-import { authLimiter, writeLimiter } from "../middleware/rateLimitMiddleware.js";
+import {
+  authLimiter,
+  passwordResetConfirmLimiter,
+  passwordResetRequestLimiter,
+  writeLimiter
+} from "../middleware/rateLimitMiddleware.js";
 
 const router = Router();
 
 router.post("/login", authLimiter, login);
 router.post("/logout", requireAdmin, logout);
+router.post("/password-reset/request", passwordResetRequestLimiter, requestAdminPasswordReset);
+router.post("/password-reset/confirm", passwordResetConfirmLimiter, confirmAdminPasswordReset);
 router.get("/account", requireAdmin, getAdminAccount);
 router.put("/credentials", requireAdmin, writeLimiter, updateAdminCredentials);
 router.put("/password", requireAdmin, writeLimiter, updateAdminCredentials);

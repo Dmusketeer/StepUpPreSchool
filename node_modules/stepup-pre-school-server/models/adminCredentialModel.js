@@ -28,14 +28,23 @@ export async function getAdminUsername() {
 }
 
 export async function changeAdminCredentials(currentPassword, { newUsername = "", newPassword = "" } = {}) {
-  if (!newUsername && !newPassword) {
-    return { ok: false, status: 400, error: "Provide a new admin ID, a new password, or both." };
-  }
-
   const credentials = await readAdminCredentials();
 
   if (!verifyPassword(currentPassword, credentials.password)) {
     return { ok: false, status: 401, error: "Current password is incorrect." };
+  }
+
+  return applyCredentialUpdate(credentials, { newUsername, newPassword });
+}
+
+export async function resetAdminCredentials({ newUsername = "", newPassword = "" } = {}) {
+  const credentials = await readAdminCredentials();
+  return applyCredentialUpdate(credentials, { newUsername, newPassword });
+}
+
+async function applyCredentialUpdate(credentials, { newUsername, newPassword }) {
+  if (!newUsername && !newPassword) {
+    return { ok: false, status: 400, error: "Provide a new admin ID, a new password, or both." };
   }
 
   if (newUsername) {
@@ -78,6 +87,10 @@ function validateUsername(username) {
   }
 
   return "";
+}
+
+export function checkAdminUsernameFormat(username) {
+  return validateUsername(username);
 }
 
 async function readAdminCredentials() {
