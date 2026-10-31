@@ -2607,6 +2607,23 @@ textarea {
   font-weight: 900;
 }
 
+.admin-link-button {
+  justify-self: start;
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--teal-dark);
+  font-weight: 900;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.admin-link-button:hover,
+.admin-link-button:focus-visible {
+  color: var(--teal);
+  outline: none;
+}
+
 .admin-header {
   display: flex;
   align-items: center;

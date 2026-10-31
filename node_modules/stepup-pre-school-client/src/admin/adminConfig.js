@@ -12,6 +12,13 @@ export const emptyPasswordForm = {
   confirmPassword: ""
 };
 
+export const emptyResetForm = {
+  code: "",
+  newUsername: "",
+  newPassword: "",
+  confirmPassword: ""
+};
+
 export const emptyUploadForm = { title: "", alt: "", category: "Recent Uploads", files: [] };
 export const emptyEventForm = { date: "", title: "", description: "" };
 export const emptyNoticeForm = { date: "", title: "", text: "" };

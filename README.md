@@ -119,18 +119,24 @@ Set these in **App Service > Settings > Environment variables**:
 - `MONGODB_SERVER_SELECTION_TIMEOUT_MS=2500`
 - `ADMIN_USERNAME=admin`
 - `ADMIN_PASSWORD=<strong-password>`
-
-`ADMIN_USERNAME` and `ADMIN_PASSWORD` only seed the first admin account. After that, the admin ID and password are
-stored (password hashed with scrypt) and can be reset from the admin panel **Security** tab.
-- `WHATSAPP_TO_NUMBER=<optional>`
-- `WHATSAPP_PHONE_NUMBER_ID=<optional>`
-- `WHATSAPP_ACCESS_TOKEN=<optional>`
+- `WHATSAPP_TO_NUMBER=<optional, required for admin forgot-password recovery>`
+- `WHATSAPP_PHONE_NUMBER_ID=<optional, required for admin forgot-password recovery>`
+- `WHATSAPP_ACCESS_TOKEN=<optional, required for admin forgot-password recovery>`
 - `WHATSAPP_GRAPH_VERSION=v20.0`
 - `GOOGLE_MAPS_API_KEY=<optional, enables Gallery import from Google>`
 - `GOOGLE_PLACE_ID=<optional>`
 - `GOOGLE_PLACE_QUERY=<optional, used when GOOGLE_PLACE_ID is not set>`
 
 Do not commit production secrets into source control.
+
+`ADMIN_USERNAME` and `ADMIN_PASSWORD` only seed the first admin account. After that, the admin ID and password are
+stored (password hashed with scrypt) and can be reset two ways:
+
+- **While logged in**: admin panel **Security** tab (requires the current password).
+- **Forgot password**: "Forgot admin ID or password?" link on the admin login page. This sends a one-time 6-digit
+  code (valid 10 minutes, single-use) via WhatsApp to `WHATSAPP_TO_NUMBER` — the same WhatsApp integration used for
+  enquiry alerts. Without `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, and `WHATSAPP_TO_NUMBER` configured,
+  this recovery option is unavailable and returns a clear "WhatsApp API is not configured" error.
 
 ### 4. Configure custom domain `stepuppreschool.in`
 
@@ -202,6 +208,8 @@ Use MongoDB Atlas for persistence. Free hosting instances can restart, so local 
 - `GET /api/admin/enquiries` - protected admin enquiry list
 - `GET /api/admin/account` - protected current admin ID
 - `PUT /api/admin/credentials` - protected admin ID and/or password reset
+- `POST /api/admin/password-reset/request` - public; sends a one-time WhatsApp reset code
+- `POST /api/admin/password-reset/confirm` - public; confirms the code and resets admin ID/password
 
 ## Backend MVC Structure
 
