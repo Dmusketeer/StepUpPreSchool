@@ -45,3 +45,5 @@ export const socialPlatforms = [
 ];
 
 export const allGalleryCategory = "All";
+
+export const galleryPreviewCount = 5;

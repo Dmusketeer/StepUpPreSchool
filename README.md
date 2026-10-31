@@ -10,6 +10,39 @@ Full-stack dynamic and responsive website for **StepUp Pre School**, built with 
 - Vite development server with API proxy for local development.
 - Production path where Express can serve the built React app from `client/dist`.
 
+## Gallery Content
+
+The public gallery shows a maximum of 5 items at a time with a **View more** control that expands the full set, and category filters that hide any category with no items.
+
+Gallery content comes from two places:
+
+- `media` — photos and videos uploaded through **Admin > Gallery**, stored in `server/uploads`.
+- `gallery` — the seeded placeholder photos in `server/data/schoolData.js`.
+
+As soon as one item is uploaded, the seeded placeholders are hidden and only real uploads are shown. Delete every uploaded item to bring the placeholders back.
+
+Uploads are written to local disk, so on hosts with ephemeral storage (such as Azure App Service) they do not survive a redeploy. Use external object storage for production media.
+
+### Import photos from your Google Business listing
+
+**Admin > Gallery > Import from Google** copies photos from your Google Business Profile into the gallery using the official [Places API (New)](https://developers.google.com/maps/documentation/places/web-service/place-photos). Photos are downloaded into `server/uploads` and served from your own domain, so nothing is hotlinked from Google.
+
+Scraping photos off a Google Maps page is not supported. It breaks Google's Terms of Service, the image URLs are signed and expire, and a public listing mixes owner photos with customer photos that the school does not own. The Places API returns the photos Google licenses for reuse together with the author attribution that must be displayed alongside them.
+
+To enable it:
+
+1. In Google Cloud, create a project, enable **Places API (New)**, and create an API key.
+2. Add the key to `server/.env`:
+
+```env
+GOOGLE_MAPS_API_KEY=your_google_places_api_key
+GOOGLE_PLACE_QUERY=StepUp Pre School Kasia Kushinagar
+```
+
+3. Optionally set `GOOGLE_PLACE_ID` directly to skip the lookup.
+
+Each import brings in up to 20 photos and stores the Google author attribution as the alt text. Only import photos your school owns or is permitted to reuse.
+
 ## Run Locally
 
 Install dependencies:
@@ -90,6 +123,9 @@ Set these in **App Service > Settings > Environment variables**:
 - `WHATSAPP_PHONE_NUMBER_ID=<optional>`
 - `WHATSAPP_ACCESS_TOKEN=<optional>`
 - `WHATSAPP_GRAPH_VERSION=v20.0`
+- `GOOGLE_MAPS_API_KEY=<optional, enables Gallery import from Google>`
+- `GOOGLE_PLACE_ID=<optional>`
+- `GOOGLE_PLACE_QUERY=<optional, used when GOOGLE_PLACE_ID is not set>`
 
 Do not commit production secrets into source control.
 

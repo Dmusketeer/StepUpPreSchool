@@ -1,8 +1,10 @@
+import crypto from "node:crypto";
 import { changeAdminPassword, validateAdminCredential } from "../models/adminCredentialModel.js";
 import { createAdminSession, deleteAdminSession } from "../models/adminSessionModel.js";
 import { listEnquiries, updateEnquiryStatus } from "../models/enquiryModel.js";
 import { addMediaItems, deleteMedia, listMedia } from "../models/mediaModel.js";
 import { ensureSiteShape, readSiteData, writeSiteData } from "../models/siteModel.js";
+import { importGooglePlacePhotos } from "../services/placesService.js";
 import { clean, isPlainObject, parseLimit } from "../utils/textUtils.js";
 import { createMediaItem, getUploadedFiles } from "../utils/uploadUtils.js";
 
@@ -124,6 +126,41 @@ export async function deleteAdminMedia(request, response, next) {
     }
 
     response.json({ message: "Media deleted." });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function importAdminGoogleMedia(request, response, next) {
+  try {
+    const result = await importGooglePlacePhotos(request.body?.limit);
+
+    if (!result.ok) {
+      response.status(result.status).json({ error: result.error });
+      return;
+    }
+
+    const category = clean(request.body?.category) || "Campus";
+    const mediaItems = result.photos.map((photo, index) => ({
+      id: crypto.randomUUID(),
+      type: "image",
+      title: `${result.displayName || "StepUp Pre School"} ${index + 1}`,
+      alt: photo.attribution,
+      attribution: photo.attribution,
+      category,
+      url: `/uploads/${photo.filename}`,
+      filename: photo.filename,
+      mimeType: photo.mimeType,
+      size: photo.size,
+      createdAt: new Date().toISOString()
+    }));
+
+    await addMediaItems(mediaItems);
+
+    response.status(201).json({
+      message: `${mediaItems.length} photo${mediaItems.length === 1 ? "" : "s"} imported from Google.`,
+      media: mediaItems
+    });
   } catch (error) {
     next(error);
   }

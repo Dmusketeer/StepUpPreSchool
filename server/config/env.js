@@ -19,7 +19,10 @@ export const env = {
   whatsappGraphVersion: process.env.WHATSAPP_GRAPH_VERSION || "v20.0",
   whatsappAccessToken: process.env.WHATSAPP_ACCESS_TOKEN,
   whatsappPhoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID,
-  whatsappToNumber: process.env.WHATSAPP_TO_NUMBER
+  whatsappToNumber: process.env.WHATSAPP_TO_NUMBER,
+  googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || "",
+  googlePlaceId: process.env.GOOGLE_PLACE_ID || "",
+  googlePlaceQuery: process.env.GOOGLE_PLACE_QUERY || ""
 };
 
 export const isProduction = env.nodeEnv === "production";

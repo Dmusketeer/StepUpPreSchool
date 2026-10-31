@@ -4,6 +4,7 @@ import {
   getAdminEnquiries,
   getAdminMedia,
   getAdminSite,
+  importAdminGoogleMedia,
   login,
   logout,
   updateAdminPassword,
@@ -35,6 +36,7 @@ router.post(
   ]),
   uploadAdminMedia
 );
+router.post("/media/google-import", requireAdmin, writeLimiter, importAdminGoogleMedia);
 router.delete("/media/:id", requireAdmin, writeLimiter, deleteAdminMedia);
 
 export default router;

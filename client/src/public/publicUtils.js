@@ -147,3 +147,27 @@ export function createBrochureDownloadHref(details) {
 export function formatCount(value) {
   return new Intl.NumberFormat("en-IN").format(Number(value) || 0);
 }
+
+export function buildGalleryItems(site) {
+  const uploadedMedia = (site?.media ?? []).map((item) => ({
+    id: item.id,
+    type: item.type,
+    src: item.url,
+    title: item.title,
+    alt: item.alt || item.title,
+    category: item.category || "Recent Uploads"
+  }));
+
+  if (uploadedMedia.length) {
+    return uploadedMedia;
+  }
+
+  return (site?.gallery ?? []).map((item, index) => ({
+    id: `default-gallery-${index}`,
+    type: "image",
+    src: item.image,
+    title: item.title,
+    alt: item.alt || item.title,
+    category: item.category || "Campus"
+  }));
+}

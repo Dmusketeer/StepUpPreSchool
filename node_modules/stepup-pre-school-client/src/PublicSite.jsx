@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import ThreePlayBackground from "./ThreePlayBackground.jsx";
 import creatorLogo from "./assets/my-logo.png";
 import { storageKeys } from "./config/storageKeys.js";
@@ -10,13 +10,16 @@ import {
   CalendarDays,
   CheckCircle2,
   Clock,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
   FileDown,
   HeartHandshake,
   HelpCircle,
   Mail,
   MapPin,
+  Maximize2,
   Menu,
   MessageCircle,
   Palette,
@@ -33,8 +36,8 @@ import {
   X
 } from "lucide-react";
 
-import { allGalleryCategory, iconMap, navItems, socialPlatforms } from "./public/publicConfig.js";
-import { createBrochureDownloadHref, createWhatsAppLink, formatCount } from "./public/publicUtils.js";
+import { allGalleryCategory, galleryPreviewCount, iconMap, navItems, socialPlatforms } from "./public/publicConfig.js";
+import { createBrochureDownloadHref, createWhatsAppLink, buildGalleryItems, formatCount } from "./public/publicUtils.js";
 
 function PublicSite() {
   const [site, setSite] = useState(null);
@@ -96,10 +99,8 @@ function PublicSite() {
       return undefined;
     }
 
-    const revealElements = document.querySelectorAll(".reveal-section, .reveal-item");
-
     if (!("IntersectionObserver" in window)) {
-      revealElements.forEach((element) => element.classList.add("is-visible"));
+      document.querySelectorAll(".reveal-section, .reveal-item").forEach((element) => element.classList.add("is-visible"));
       return undefined;
     }
 
@@ -115,9 +116,21 @@ function PublicSite() {
       { threshold: 0.16, rootMargin: "0px 0px -10% 0px" }
     );
 
-    revealElements.forEach((element) => observer.observe(element));
+    const observeRevealElements = () => {
+      document
+        .querySelectorAll(".reveal-section:not(.is-visible), .reveal-item:not(.is-visible)")
+        .forEach((element) => observer.observe(element));
+    };
 
-    return () => observer.disconnect();
+    observeRevealElements();
+
+    const contentObserver = new MutationObserver(observeRevealElements);
+    contentObserver.observe(document.body, { childList: true, subtree: true });
+
+    return () => {
+      observer.disconnect();
+      contentObserver.disconnect();
+    };
   }, [site, visitorStats]);
 
   useEffect(() => {
@@ -172,24 +185,7 @@ function PublicSite() {
     return <ErrorScreen message={error} />;
   }
 
-  const galleryItems = [
-    ...(site.media ?? []).map((item) => ({
-      id: item.id,
-      type: item.type,
-      src: item.url,
-      title: item.title,
-      alt: item.alt || item.title,
-      category: item.category || "Recent Uploads"
-    })),
-    ...site.gallery.map((item, index) => ({
-      id: `default-gallery-${index}`,
-      type: "image",
-      src: item.image,
-      title: item.title,
-      alt: item.alt || item.title,
-      category: item.category || "Campus"
-    }))
-  ];
+  const galleryItems = buildGalleryItems(site);
 
   return (
     <div className="site-shell">
@@ -703,49 +699,119 @@ function AdmissionApplication({ programs }) {
   );
 }
 
-function Gallery({ items, categories, onOpenViewer }) {
+export function Gallery({ items, categories, onOpenViewer }) {
+  const categoryCounts = useMemo(() => {
+    const counts = new Map([[allGalleryCategory, items.length]]);
+
+    items.forEach((item) => {
+      if (item.category) {
+        counts.set(item.category, (counts.get(item.category) ?? 0) + 1);
+      }
+    });
+
+    return counts;
+  }, [items]);
   const availableCategories = useMemo(() => {
     const itemCategories = items.map((item) => item.category).filter(Boolean);
-    return [allGalleryCategory, ...new Set([...categories, ...itemCategories])];
-  }, [categories, items]);
+    const uniqueCategories = [allGalleryCategory, ...new Set([...categories, ...itemCategories])];
+    return uniqueCategories.filter((category) => (categoryCounts.get(category) ?? 0) > 0);
+  }, [categories, categoryCounts, items]);
   const [activeCategory, setActiveCategory] = useState(allGalleryCategory);
-  const visibleItems = activeCategory === allGalleryCategory ? items : items.filter((item) => item.category === activeCategory);
-  const viewerItems = visibleItems.map((item) => ({
+  const [isExpanded, setIsExpanded] = useState(false);
+  const gridRef = useRef(null);
+  const categoryItems = activeCategory === allGalleryCategory ? items : items.filter((item) => item.category === activeCategory);
+  const visibleItems = isExpanded ? categoryItems : categoryItems.slice(0, galleryPreviewCount);
+  const hiddenCount = categoryItems.length - visibleItems.length;
+  const viewerItems = categoryItems.map((item) => ({
     type: item.type,
     src: item.src,
     title: item.title,
     alt: item.alt || item.title
   }));
 
+  const selectCategory = (category) => {
+    setActiveCategory(category);
+    setIsExpanded(false);
+  };
+
+  const collapseGallery = () => {
+    setIsExpanded(false);
+    gridRef.current?.scrollIntoView({ block: "start" });
+  };
+
   return (
     <section id="gallery" className="section gallery-section reveal-section">
       <div className="container">
         <SectionIntro
           kicker="Campus Moments"
-          title="Photos and videos from our gallery"
-          text="Classrooms, activity corners, outdoor play, celebrations, and newly uploaded moments stay together here."
+          title="A closer look at life at StepUp"
+          text="Classrooms, activity corners, outdoor play, and celebrations, captured through the school year."
         />
-        <div className="gallery-filter" aria-label="Gallery categories">
+        <div className="gallery-filter" role="group" aria-label="Filter gallery by category">
           {availableCategories.map((category) => (
-            <button className={activeCategory === category ? "active" : ""} key={category} type="button" onClick={() => setActiveCategory(category)}>
+            <button
+              aria-pressed={activeCategory === category}
+              className={activeCategory === category ? "active" : ""}
+              key={category}
+              type="button"
+              onClick={() => selectCategory(category)}
+            >
               {category}
+              <span className="gallery-filter-count">{categoryCounts.get(category) ?? 0}</span>
             </button>
           ))}
         </div>
-        <div className="gallery-grid">
-          {visibleItems.map((item, index) => (
-            <figure className="gallery-item reveal-item clickable-media" key={item.id} style={{ "--reveal-delay": `${index * 65}ms` }}>
-              <button type="button" aria-label={`View ${item.title}`} onClick={() => onOpenViewer(viewerItems, index)}>
-                {item.type === "video" ? (
-                  <video src={item.src} muted playsInline preload="metadata" />
-                ) : (
-                  <img src={item.src} alt={item.alt || item.title} />
-                )}
-                <figcaption>{item.title}</figcaption>
-              </button>
-            </figure>
-          ))}
-        </div>
+        {visibleItems.length ? (
+          <div className="gallery-grid" ref={gridRef}>
+            {visibleItems.map((item, index) => (
+              <figure
+                className="gallery-item reveal-item clickable-media"
+                key={item.id}
+                style={{ "--reveal-delay": `${Math.min(index, 7) * 65}ms` }}
+              >
+                <button type="button" aria-label={`View ${item.title}`} onClick={() => onOpenViewer(viewerItems, index)}>
+                  {item.type === "video" ? (
+                    <video src={item.src} muted playsInline preload="metadata" />
+                  ) : (
+                    <img src={item.src} alt={item.alt || item.title} loading="lazy" decoding="async" />
+                  )}
+                  <span className="gallery-item-scrim" aria-hidden="true" />
+                  {item.type === "video" ? (
+                    <span className="gallery-item-badge" aria-hidden="true">
+                      <Video />
+                      Video
+                    </span>
+                  ) : null}
+                  <span className="gallery-item-zoom" aria-hidden="true">
+                    <Maximize2 />
+                  </span>
+                  <figcaption>
+                    <span className="gallery-item-title">{item.title}</span>
+                    {item.category ? <span className="gallery-item-category">{item.category}</span> : null}
+                  </figcaption>
+                </button>
+              </figure>
+            ))}
+          </div>
+        ) : (
+          <p className="gallery-empty">No photos or videos in this category yet. Please check back soon.</p>
+        )}
+        {categoryItems.length > galleryPreviewCount ? (
+          <div className="gallery-more">
+            <p className="gallery-more-count">
+              Showing {visibleItems.length} of {categoryItems.length}
+            </p>
+            <button
+              aria-expanded={isExpanded}
+              className="button gallery-more-button"
+              type="button"
+              onClick={() => (isExpanded ? collapseGallery() : setIsExpanded(true))}
+            >
+              {isExpanded ? "Show less" : `View ${hiddenCount} more`}
+              {isExpanded ? <ChevronUp /> : <ChevronDown />}
+            </button>
+          </div>
+        ) : null}
       </div>
     </section>
   );
