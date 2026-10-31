@@ -38,7 +38,11 @@ import { authHeaders, requestJson } from "./services/apiClient.js";
 
 function AdminPanel() {
   const [token, setToken] = useState(() => localStorage.getItem(storageKeys.adminToken) || "");
-  const [login, setLogin] = useState(emptyLogin);
+  const [adminUsername, setAdminUsername] = useState(() => localStorage.getItem(storageKeys.adminUsername) || emptyLogin.username);
+  const [login, setLogin] = useState(() => ({
+    ...emptyLogin,
+    username: localStorage.getItem(storageKeys.adminUsername) || emptyLogin.username
+  }));
   const [siteData, setSiteData] = useState(null);
   const [jsonText, setJsonText] = useState("");
   const [media, setMedia] = useState([]);
@@ -132,21 +136,33 @@ function AdminPanel() {
 
     try {
       const headers = authHeaders(currentToken);
-      const [nextSiteData, nextMedia, nextEnquiries] = await Promise.all([
+      const [nextSiteData, nextMedia, nextEnquiries, nextAccount] = await Promise.all([
         requestJson("/api/admin/site", { headers }),
         requestJson("/api/admin/media", { headers }),
-        requestJson("/api/admin/enquiries?limit=250", { headers })
+        requestJson("/api/admin/enquiries?limit=250", { headers }),
+        requestJson("/api/admin/account", { headers })
       ]);
 
       setSiteData(nextSiteData);
       setJsonText(JSON.stringify(nextSiteData, null, 2));
       setMedia(nextMedia);
       setEnquiries(nextEnquiries.enquiries ?? []);
+      rememberAdminUsername(nextAccount.username);
       setStatus({ type: "success", message: "Admin data loaded." });
     } catch (error) {
       handleLogout(false);
       setStatus({ type: "error", message: error.message });
     }
+  }
+
+  function rememberAdminUsername(username) {
+    if (!username) {
+      return;
+    }
+
+    localStorage.setItem(storageKeys.adminUsername, username);
+    setAdminUsername(username);
+    setLogin((current) => ({ ...current, username }));
   }
 
   async function handleLogin(event) {
@@ -161,7 +177,8 @@ function AdminPanel() {
 
       localStorage.setItem(storageKeys.adminToken, data.token);
       setToken(data.token);
-      setLogin(emptyLogin);
+      rememberAdminUsername(data.username || login.username);
+      setLogin((current) => ({ ...current, password: "" }));
       setStatus({ type: "success", message: "Logged in." });
     } catch (error) {
       setStatus({ type: "error", message: error.message });
@@ -479,32 +496,50 @@ function AdminPanel() {
     }
   }
 
-  async function updatePassword(event) {
+  async function updateCredentials(event) {
     event.preventDefault();
 
-    if (passwordForm.newPassword.length < 8) {
+    const newUsername = passwordForm.newUsername.trim();
+    const newPassword = passwordForm.newPassword;
+
+    if (!newUsername && !newPassword) {
+      setStatus({ type: "error", message: "Enter a new admin ID, a new password, or both." });
+      return;
+    }
+
+    if (newUsername && !/^[A-Za-z0-9._-]{3,32}$/.test(newUsername)) {
+      setStatus({
+        type: "error",
+        message: "Admin ID must be 3-32 characters and use only letters, numbers, dots, underscores, or hyphens."
+      });
+      return;
+    }
+
+    if (newPassword && newPassword.length < 8) {
       setStatus({ type: "error", message: "New password must be at least 8 characters." });
       return;
     }
 
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+    if (newPassword !== passwordForm.confirmPassword) {
       setStatus({ type: "error", message: "New password and confirmation do not match." });
       return;
     }
 
-    setStatus({ type: "loading", message: "Updating admin password..." });
+    setStatus({ type: "loading", message: "Updating admin credentials..." });
 
     try {
-      const response = await adminRequest("/api/admin/password", {
+      const response = await adminRequest("/api/admin/credentials", {
         method: "PUT",
         body: JSON.stringify({
           currentPassword: passwordForm.currentPassword,
-          newPassword: passwordForm.newPassword
+          newUsername,
+          newPassword
         })
       });
 
+      rememberAdminUsername(response.username);
       setPasswordForm(emptyPasswordForm);
-      setStatus({ type: "success", message: `${response.message} Use the new password next time you login.` });
+      setStatus({ type: "success", message: `${response.message} Use the new sign-in details next time you login.` });
     } catch (error) {
       setStatus({ type: "error", message: error.message });
     }
@@ -1119,12 +1154,15 @@ function AdminPanel() {
       )}
 
       {activeTab === "password" && (
-        <form className="admin-card password-card" onSubmit={updatePassword}>
+        <form className="admin-card password-card" onSubmit={updateCredentials}>
           <div className="password-card-header">
             <KeyRound size={30} />
             <div>
-              <h2>Reset Admin Password</h2>
-              <p>Use this to change the password for the admin panel login.</p>
+              <h2>Reset Admin ID &amp; Password</h2>
+              <p>
+                Current admin ID: <strong>{adminUsername}</strong>. Change the sign-in ID, the password, or both. Leave a field blank to
+                keep it unchanged.
+              </p>
             </div>
           </div>
           <label>
@@ -1137,13 +1175,27 @@ function AdminPanel() {
             />
           </label>
           <label>
-            New Password
+            New Admin ID (optional)
+            <input
+              type="text"
+              value={passwordForm.newUsername}
+              onChange={(event) => setPasswordForm((current) => ({ ...current, newUsername: event.target.value }))}
+              placeholder={adminUsername}
+              autoComplete="username"
+              minLength="3"
+              maxLength="32"
+              pattern="[A-Za-z0-9._\-]{3,32}"
+              title="3-32 characters: letters, numbers, dots, underscores, or hyphens."
+            />
+          </label>
+          <label>
+            New Password (optional)
             <input
               type="password"
               value={passwordForm.newPassword}
               onChange={(event) => setPasswordForm((current) => ({ ...current, newPassword: event.target.value }))}
+              autoComplete="new-password"
               minLength="8"
-              required
             />
           </label>
           <label>
@@ -1152,13 +1204,14 @@ function AdminPanel() {
               type="password"
               value={passwordForm.confirmPassword}
               onChange={(event) => setPasswordForm((current) => ({ ...current, confirmPassword: event.target.value }))}
+              autoComplete="new-password"
               minLength="8"
-              required
+              required={Boolean(passwordForm.newPassword)}
             />
           </label>
           <button className="button primary" type="submit">
             <KeyRound size={18} />
-            Update Password
+            Update Credentials
           </button>
         </form>
       )}

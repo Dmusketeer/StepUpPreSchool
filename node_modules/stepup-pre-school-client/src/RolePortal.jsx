@@ -36,7 +36,7 @@ const roleOptions = [
     icon: ShieldCheck,
     username: "admin",
     password: "stepup123",
-    text: "Open the protected admin panel for website data, media, enquiries, and password reset."
+    text: "Open the protected admin panel for website data, media, enquiries, and admin ID & password reset."
   }
 ];
 

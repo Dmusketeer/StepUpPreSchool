@@ -119,6 +119,9 @@ Set these in **App Service > Settings > Environment variables**:
 - `MONGODB_SERVER_SELECTION_TIMEOUT_MS=2500`
 - `ADMIN_USERNAME=admin`
 - `ADMIN_PASSWORD=<strong-password>`
+
+`ADMIN_USERNAME` and `ADMIN_PASSWORD` only seed the first admin account. After that, the admin ID and password are
+stored (password hashed with scrypt) and can be reset from the admin panel **Security** tab.
 - `WHATSAPP_TO_NUMBER=<optional>`
 - `WHATSAPP_PHONE_NUMBER_ID=<optional>`
 - `WHATSAPP_ACCESS_TOKEN=<optional>`
@@ -197,6 +200,8 @@ Use MongoDB Atlas for persistence. Free hosting instances can restart, so local 
 - `POST /api/visits` - record a website visit
 - `POST /api/enquiries`
 - `GET /api/admin/enquiries` - protected admin enquiry list
+- `GET /api/admin/account` - protected current admin ID
+- `PUT /api/admin/credentials` - protected admin ID and/or password reset
 
 ## Backend MVC Structure
 

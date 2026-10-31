@@ -1,13 +1,14 @@
 import { Router } from "express";
 import {
   deleteAdminMedia,
+  getAdminAccount,
   getAdminEnquiries,
   getAdminMedia,
   getAdminSite,
   importAdminGoogleMedia,
   login,
   logout,
-  updateAdminPassword,
+  updateAdminCredentials,
   updateAdminEnquiryStatus,
   updateAdminSite,
   uploadAdminMedia
@@ -20,7 +21,9 @@ const router = Router();
 
 router.post("/login", authLimiter, login);
 router.post("/logout", requireAdmin, logout);
-router.put("/password", requireAdmin, writeLimiter, updateAdminPassword);
+router.get("/account", requireAdmin, getAdminAccount);
+router.put("/credentials", requireAdmin, writeLimiter, updateAdminCredentials);
+router.put("/password", requireAdmin, writeLimiter, updateAdminCredentials);
 router.get("/site", requireAdmin, getAdminSite);
 router.put("/site", requireAdmin, writeLimiter, updateAdminSite);
 router.get("/enquiries", requireAdmin, getAdminEnquiries);
