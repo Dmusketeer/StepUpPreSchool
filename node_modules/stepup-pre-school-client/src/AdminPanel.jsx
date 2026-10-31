@@ -8,6 +8,7 @@ import {
   Inbox,
   KeyRound,
   LogOut,
+  MapPin,
   RefreshCw,
   Save,
   Search,
@@ -53,6 +54,7 @@ function AdminPanel() {
   const [mediaCategoryFilter, setMediaCategoryFilter] = useState("all");
   const [enquiryStatusFilter, setEnquiryStatusFilter] = useState("all");
   const [enquirySearch, setEnquirySearch] = useState("");
+  const [isDraggingFiles, setIsDraggingFiles] = useState(false);
 
   const isLoggedIn = Boolean(token);
 
@@ -326,6 +328,59 @@ function AdminPanel() {
       setSiteData(response.siteData);
       setJsonText(JSON.stringify(response.siteData, null, 2));
       setStatus({ type: "success", message: "Website data saved. Refresh the public site to see changes." });
+    } catch (error) {
+      setStatus({ type: "error", message: error.message });
+    }
+  }
+
+  function handleDragOver(event) {
+    event.preventDefault();
+    setIsDraggingFiles(true);
+  }
+
+  function handleDragLeave(event) {
+    event.preventDefault();
+    setIsDraggingFiles(false);
+  }
+
+  function handleDropFiles(event) {
+    event.preventDefault();
+    setIsDraggingFiles(false);
+
+    const droppedFiles = Array.from(event.dataTransfer?.files ?? []).filter(
+      (file) => file.type.startsWith("image/") || file.type.startsWith("video/")
+    );
+
+    if (!droppedFiles.length) {
+      setStatus({ type: "error", message: "Only photo and video files can be added to the gallery." });
+      return;
+    }
+
+    setUploadForm((current) => ({ ...current, files: [...current.files, ...droppedFiles] }));
+    setStatus({
+      type: "success",
+      message: `${droppedFiles.length} file${droppedFiles.length === 1 ? "" : "s"} ready. Press Upload to Gallery to publish.`
+    });
+  }
+
+  async function importGoogleMedia() {
+    setStatus({ type: "loading", message: "Importing photos from your Google listing..." });
+
+    try {
+      const response = await adminRequest("/api/admin/media/google-import", {
+        method: "POST",
+        body: JSON.stringify({ limit: 10, category: uploadForm.category || "Campus" })
+      });
+
+      const importedMedia = Array.isArray(response.media) ? response.media : [];
+
+      setMedia((current) => [...importedMedia, ...current]);
+      setSiteData((current) => {
+        const next = { ...current, media: [...importedMedia, ...(current.media ?? [])] };
+        setJsonText(JSON.stringify(next, null, 2));
+        return next;
+      });
+      setStatus({ type: "success", message: response.message });
     } catch (error) {
       setStatus({ type: "error", message: error.message });
     }
@@ -847,16 +902,33 @@ function AdminPanel() {
                 accept="image/*,video/mp4,video/webm,video/quicktime"
                 multiple
                 onChange={(event) => setUploadForm((current) => ({ ...current, files: Array.from(event.target.files ?? []) }))}
-                required
               />
               <span className="file-hint">
                 {uploadForm.files.length ? `${uploadForm.files.length} file${uploadForm.files.length === 1 ? "" : "s"} selected` : "You can select multiple photos and videos together."}
               </span>
             </label>
+            <div
+              className={`upload-dropzone ${isDraggingFiles ? "is-dragging" : ""}`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDropFiles}
+            >
+              <ImagePlus size={20} />
+              <span>Or drag photos and videos here</span>
+            </div>
             <button className="button primary" type="submit">
               <Upload size={18} />
               Upload to Gallery
             </button>
+            <div className="google-import">
+              <p className="google-import-text">
+                Already have photos on your Google Business listing? Import them straight into the gallery.
+              </p>
+              <button className="button google-import-button" type="button" onClick={importGoogleMedia}>
+                <MapPin size={18} />
+                Import from Google
+              </button>
+            </div>
           </form>
 
           <div className="admin-card media-manager">

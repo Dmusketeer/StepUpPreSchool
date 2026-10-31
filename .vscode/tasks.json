@@ -1,0 +1,23 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "StepUp: dev (server + client)",
+			"type": "shell",
+			"command": "npm run dev",
+			"isBackground": true
+		},
+		{
+			"label": "StepUp: test",
+			"type": "shell",
+			"command": "npm test",
+			"isBackground": false
+		},
+		{
+			"label": "StepUp: build",
+			"type": "shell",
+			"command": "npm run build",
+			"isBackground": false
+		}
+	]
+}

@@ -150,31 +150,37 @@
   "gallery": [
     {
       "title": "Story Corner",
+      "category": "Classroom",
       "alt": "Children listening during story time",
       "image": "https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=900&q=80"
     },
     {
       "title": "Creative Art",
+      "category": "Art Activities",
       "alt": "Preschool children painting and making art",
       "image": "https://images.unsplash.com/photo-1567057419565-4349c49d8a04?auto=format&fit=crop&w=900&q=80"
     },
     {
       "title": "Activity Tables",
+      "category": "Classroom",
       "alt": "Children working with classroom activity materials",
       "image": "https://images.unsplash.com/photo-1588072432836-e10032774350?auto=format&fit=crop&w=900&q=80"
     },
     {
       "title": "Outdoor Play",
+      "category": "Outdoor Play",
       "alt": "Young children playing outside at school",
       "image": "https://images.unsplash.com/photo-1544776193-352d25ca82cd?auto=format&fit=crop&w=900&q=80"
     },
     {
       "title": "Music and Movement",
+      "category": "Events",
       "alt": "Children enjoying music and movement class",
       "image": "https://images.unsplash.com/photo-1604881991720-f91add269bed?auto=format&fit=crop&w=900&q=80"
     },
     {
       "title": "Celebration Days",
+      "category": "Celebrations",
       "alt": "Preschool celebration with colorful classroom activities",
       "image": "https://images.unsplash.com/photo-1519340241574-2cec6aef0c01?auto=format&fit=crop&w=900&q=80"
     }
